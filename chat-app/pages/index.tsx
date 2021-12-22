@@ -1,5 +1,5 @@
 import type { NextPage } from "next";
-import AvatarSelector from "../components/AvatarSelector";
+import Image from "next/image";
 import BackgroundParticles from "../components/BackgroundParticles";
 import "animate.css";
 import { useEffect, useState } from "react";
@@ -7,10 +7,11 @@ import Chat from "../components/Chat";
 
 const Home: NextPage = () => {
   const splashes = [
-    <span>
-      Check us out on{" "}
-      <a className="text-red-500 cursor-pointer underline">https://red.sus!</a>
-    </span>,
+    "The greatest innovation since toilet paper.",
+    "The best chat app ever.",
+    "<Awesome splash text>",
+    "What is a sentence?",
+    "Obamna"
   ];
 
   const [loggedIn, setLoggedIn] = useState(false);
@@ -19,7 +20,19 @@ const Home: NextPage = () => {
 
   const [username, setUsername] = useState("");
 
-  const splashText = splashes[Math.floor(Math.random() * splashes.length)];
+  const [splashText, setSplash] = useState("");
+
+  const [socket, setSocket] = useState<WebSocket | null>(null);
+
+  const avatarAmount = 4; //Amount of avatars in the public folder.
+
+  const [currentAvatar, setCurrentAvatar] = useState(0);
+
+  const changeAvatar = () => {
+    if (currentAvatar === avatarAmount) setCurrentAvatar(0);
+    else setCurrentAvatar(currentAvatar + 1);
+
+  }
 
   const transitionPage = () => {
     if (username.length === 0) return;
@@ -37,10 +50,20 @@ const Home: NextPage = () => {
 
       header.classList.add("animate__fadeOutUp", "animate__delay-2s");
 
-      //Re render page after transition
-      setTimeout(() => {
-        setLoggedIn(true);
-      }, 3000);
+      const socket = new WebSocket("ws://216.51.225.121:8080");
+
+      new Promise((res) => {
+        if (socket) socket.addEventListener("open", () => res("ok"));
+
+      }).then(() => {
+        //Re render page after authentication (3 second delay for animations)
+
+        setTimeout(() => {
+          setSocket(socket);
+        }, 3000);
+        
+      });
+
     }
   };
 
@@ -56,13 +79,18 @@ const Home: NextPage = () => {
     setMusicStarted(true);
   };
 
+  useEffect(() => {
+    setSplash(splashes[Math.floor(Math.random() * splashes.length)]);
+
+  }, []);
+
   return (
     <div
       className="flex w-screen h-screen justify-center overflow-hidden"
       onClick={!musicStarted ? startMusic : () => {}}
     >
-      {loggedIn ? (
-        <Chat />
+      {socket ? (
+        <Chat socket={socket} username={username} imageId={currentAvatar} />
       ) : (
         <div className="flex justify-center">
           <div className="">
@@ -81,7 +109,23 @@ const Home: NextPage = () => {
               className="space-y-12 text-white text-xl xl:text-4xl bg-blue-400 rounded-2xl m-6 xl:m-auto p-6 drop-shadow-2xl animate__animated animate__fadeInUp animate__delay-1s"
               id="panel"
             >
-              <AvatarSelector />
+              <div className="flex justify-center">
+                <div className="text-center space-y-3 text-xl xl:text-3xl">
+                  <Image
+                    src={`/${currentAvatar}-av.png`}
+                    width={200}
+                    height={200}
+                    objectFit="cover"
+                    className="rounded-full"
+                  />
+                  <h1
+                    className="p-2 rounded-2xl bg-blue-600 hover:bg-blue-700 cursor-pointer"
+                    onClick={changeAvatar}
+                  >
+                    Change Picture
+                  </h1>
+                </div>
+              </div>
               <div className="space-y-4 xl:flex flex-row justify-evenly">
                 <div>
                   <h1>Type a username...</h1>
